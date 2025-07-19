@@ -24,6 +24,8 @@
       <class>ec.edu.ups.clinic.backend.model.User</class>
       <class>ec.edu.ups.clinic.backend.model.Appointment</class>
       <class>ec.edu.ups.clinic.backend.model.Specialty</class>
+      <class>ec.edu.ups.clinic.backend.model.DoctorSchedule</class>
+      <class>ec.edu.ups.clinic.backend.model.AdminReport</class>
 
       <properties>
       <property name="jakarta.persistence.provider" value="org.hibernate.jpa.HibernatePersistenceProvider"/>
