@@ -23,7 +23,6 @@
    <persistence-unit name="backendPersistenceUnit" transaction-type="JTA">
       <class>ec.edu.ups.clinic.backend.model.User</class>
       <class>ec.edu.ups.clinic.backend.model.Appointment</class>
-      <class>ec.edu.ups.clinic.backend.model.Specialty</class>
 
       <properties>
       <property name="jakarta.persistence.provider" value="org.hibernate.jpa.HibernatePersistenceProvider"/>

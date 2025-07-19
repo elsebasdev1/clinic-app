@@ -4,4 +4,8 @@
   <installed facet="java" version="17"/>
   <installed facet="jst.web" version="6.0"/>
   <installed facet="wst.jsdt.web" version="1.0"/>
+  <installed facet="jpt.jpa" version="3.0"/>
+  <installed facet="jst.cdi" version="2.0"/>
+  <installed facet="jboss.m2" version="1.0"/>
+  <installed facet="jst.jsf" version="2.3"/>
 </faceted-project>

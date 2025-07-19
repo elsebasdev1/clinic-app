@@ -1,0 +1,7 @@
+ec\edu\ups\clinic\backend\model\User.class
+ec\edu\ups\clinic\backend\model\Appointment.class
+ec\edu\ups\clinic\backend\dao\AppointmentDAO.class
+ec\edu\ups\clinic\backend\dao\UserDAO.class
+ec\edu\ups\clinic\backend\services\AppointmentServiceREST.class
+ec\edu\ups\clinic\backend\services\RESTApplication.class
+ec\edu\ups\clinic\backend\services\UserServiceREST.class

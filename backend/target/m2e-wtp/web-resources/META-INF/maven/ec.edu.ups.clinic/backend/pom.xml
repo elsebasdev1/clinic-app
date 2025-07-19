@@ -141,7 +141,11 @@
     </dependencyManagement>
 
     <dependencies>
-
+        <dependency>
+			    <groupId>org.postgresql</groupId>
+			    <artifactId>postgresql</artifactId>
+			    <version>42.7.1</version>
+		</dependency>
         <!-- Import the CDI API, we use provided scope as the API is included in WildFly / JBoss EAP -->
         <dependency>
             <groupId>jakarta.enterprise</groupId>
@@ -221,6 +225,13 @@
             <artifactId>arquillian-junit5-container</artifactId>
             <scope>test</scope>
         </dependency>
+
+		<dependency>
+		    <groupId>jakarta.platform</groupId>
+		    <artifactId>jakarta.jakartaee-api</artifactId>
+		    <version>10.0.0</version>
+		    <scope>provided</scope>
+		</dependency>
 
     </dependencies>
 

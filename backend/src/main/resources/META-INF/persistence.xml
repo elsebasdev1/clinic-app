@@ -16,26 +16,33 @@
     limitations under the License.
 -->
 <persistence version="3.0"
-   xmlns="https://jakarta.ee/xml/ns/persistence" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-   xsi:schemaLocation="
-        https://jakarta.ee/xml/ns/persistence
-        https://jakarta.ee/xml/ns/persistence/persistence_3_0.xsd">
-   <persistence-unit name="backendPersistenceUnit">
-      <!-- If you are running in a production environment, add a managed
-         data source, this configuration uses the JakartaEE default data source is just for development and testing! -->
-      <jta-data-source>java:comp/DefaultDataSource</jta-data-source>
+   xmlns="https://jakarta.ee/xml/ns/persistence" 
+   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+   xsi:schemaLocation="https://jakarta.ee/xml/ns/persistence https://jakarta.ee/xml/ns/persistence/persistence_3_0.xsd">
+
+   <persistence-unit name="backendPersistenceUnit" transaction-type="JTA">
+      <class>ec.edu.ups.clinic.backend.model.User</class>
+      <class>ec.edu.ups.clinic.backend.model.Appointment</class>
+      <class>ec.edu.ups.clinic.backend.model.Specialty</class>
+
       <properties>
-         <!--The database schema is auto created on deployment and dropped before redeploy.
-             Note: the following configuration does not drop the tables on undeploy. If you prefer this, use this
-             Hibernate property instead:
-             <property name="hibernate.hbm2ddl.auto" value="create-drop" />
-         -->
+      <property name="jakarta.persistence.provider" value="org.hibernate.jpa.HibernatePersistenceProvider"/>
+      
+         <!-- PostgreSQL connection -->
+         <property name="jakarta.persistence.jdbc.driver" value="org.postgresql.Driver"/>
+         <property name="jakarta.persistence.jdbc.url" value="jdbc:postgresql://localhost:5432/clinicdb"/>
+         <property name="jakarta.persistence.jdbc.user" value="userIntegrador"/>
+         <property name="jakarta.persistence.jdbc.password" value="ELpepito123@"/>
+
+         <!-- Auto schema generation -->
          <property name="jakarta.persistence.schema-generation.database.action" value="drop-and-create"/>
          <property name="jakarta.persistence.schema-generation.create-source" value="metadata"/>
          <property name="jakarta.persistence.schema-generation.drop-source" value="metadata"/>
 
-         <!-- Properties for Hibernate -->
-         <property name="hibernate.show_sql" value="false" />
+         <!-- Optional Hibernate properties -->
+         <property name="hibernate.show_sql" value="true"/>
+         <property name="hibernate.format_sql" value="true"/>
       </properties>
    </persistence-unit>
 </persistence>
+
