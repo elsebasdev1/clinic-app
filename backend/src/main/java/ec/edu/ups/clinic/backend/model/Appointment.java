@@ -13,7 +13,11 @@ public class Appointment implements Serializable {
     private Long id;
 
     private LocalDateTime dateTime;
-    private String specialty;
+    
+    @ManyToOne
+    @JoinColumn(name = "specialty_id")
+    private Specialty specialty;
+    
     private String status;
 
     @ManyToOne
@@ -40,12 +44,12 @@ public class Appointment implements Serializable {
 		this.dateTime = dateTime;
 	}
 
-	public String getSpecialty() {
-		return specialty;
+	public Specialty getSpecialty() {
+	    return specialty;
 	}
 
-	public void setSpecialty(String specialty) {
-		this.specialty = specialty;
+	public void setSpecialty(Specialty specialty) {
+	    this.specialty = specialty;
 	}
 
 	public String getStatus() {
