@@ -1,37 +1,116 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
+import React from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
+import AuthProvider, { useAuth } from './contexts/AuthContext';
 
-function App() {
-  const [count, setCount] = useState(0)
+import Login from './pages/Login';
+import PatientDashboard from './pages/PatientDashboard';
+import AdminDashboard from './pages/AdminDashboard';
+import ScheduleAppointment from './pages/ScheduleAppointment';
+import DoctorManagement from './pages/DoctorManagement';
+import UserManagement from './pages/UserManagement';
+import EditProfile from './pages/PatientEditProfile';
+import SpecialtyManagement from './pages/SpecialtyManagement';
 
-  return (
-    <>
-      <div className="flex justify-center space-x-8 my-8">
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="w-16 h-16" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="w-16 h-16" alt="React logo" />
-        </a>
-      </div>
-      <h1 className="text-4xl font-semibold text-center mb-4">Vite + React</h1>
-      <div className="bg-white p-6 rounded-lg shadow-md max-w-xs mx-auto">
-        <button 
-          onClick={() => setCount(count + 1)} 
-          className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-700 transition duration-200"
-        >
-          count is {count}
-        </button>
-        <p className="mt-4 text-gray-600">
-          Edit <code className="font-mono text-sm text-blue-600">src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="mt-4 text-center text-gray-500">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+function PrivateRoute({ children }) {
+  const { user, loadingAuth } = useAuth();
+  if (loadingAuth) return null;
+  return user ? children : <Navigate to="/login" replace />;
 }
 
-export default App
+function LoginRoute() {
+  const { user, role, loadingAuth } = useAuth();
+  if (loadingAuth) return null;
+  return !user
+    ? <Login />
+    : role === 'admin'
+      ? <Navigate to="/admin" replace />
+      : <Navigate to="/" replace />;
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <Toaster
+        position="top-center"
+        toastOptions={{
+          style: {
+            borderRadius: '8px',
+            background: '#fff',
+            color: '#333',
+          },
+        }}
+      />
+
+      {/* Rutas de la aplicación */}
+      <Routes>
+        <Route path="/login" element={<LoginRoute />} />
+
+        <Route
+          path="/"
+          element={
+            <PrivateRoute>
+              <PatientDashboard />
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/admin"
+          element={
+            <PrivateRoute>
+              <AdminDashboard />
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/admin/doctors"
+          element={
+            <PrivateRoute>
+              <DoctorManagement />
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/admin/users"
+          element={
+            <PrivateRoute>
+              <UserManagement />
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/schedule"
+          element={
+            <PrivateRoute>
+              <ScheduleAppointment />
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/profile"
+          element={
+            <PrivateRoute>
+              <EditProfile />
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/admin/specialties"
+          element={
+            <PrivateRoute>
+              <SpecialtyManagement />
+            </PrivateRoute>
+          }
+        />
+
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </AuthProvider>
+  );
+}
