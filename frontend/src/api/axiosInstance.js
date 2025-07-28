@@ -1,18 +1,11 @@
-const BASE_URL = 'http://localhost:8081/backend/rest'; 
+// src/api/axios.js
+import axios from 'axios';
 
-export async function apiFetch(endpoint, options = {}) {
-  const res = await fetch(`${BASE_URL}${endpoint}`, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-    ...options,
-  });
+const api = axios.create({
+  baseURL: 'http://localhost:8081/backend/rest',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 
-  if (!res.ok) {
-    const error = await res.text();
-    throw new Error(error || 'Error al conectar con el backend');
-  }
-
-  return res.json();
-}
+export default api;

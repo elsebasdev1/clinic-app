@@ -12,10 +12,23 @@ public class User implements Serializable {
     private Long id;
 
     private String name;
+    @Column(unique = true)
     private String email;
     private String phone;
+    private String address;
     private String role;
-    
+    @ManyToOne
+    @JoinColumn(name = "specialty_id")
+    private Specialty specialty;
+
+    public Specialty getSpecialty() {
+        return specialty;
+    }
+
+    public void setSpecialty(Specialty specialty) {
+        this.specialty = specialty;
+    }
+    	
 	public Long getId() {
 		return id;
 	}
@@ -45,6 +58,14 @@ public class User implements Serializable {
 	}
 	public void setRole(String role) {
 		this.role = role;
+	}
+
+	public String getAddress() {
+		return address;
+	}
+
+	public void setAddress(String address) {
+		this.address = address;
 	}
     
 }

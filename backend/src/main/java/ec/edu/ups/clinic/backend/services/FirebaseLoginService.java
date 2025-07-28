@@ -42,9 +42,9 @@ public class FirebaseLoginService {
             if (user == null) {
                 // Si no existe, lo creamos
                 user = new User();
-                user.setEmail(email);
+                user.setEmail(email.toLowerCase());
                 user.setName(name != null ? name : "Usuario sin nombre");
-                user.setRole("patient"); // Por defecto, puedes ajustar
+                user.setRole("admin"); // Por defecto, puedes ajustar
                 userDAO.insert(user);
             }
 

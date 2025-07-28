@@ -3,25 +3,39 @@ import { useAuth } from '../contexts/AuthContext';
 import { FcGoogle } from 'react-icons/fc';
 import { motion } from 'framer-motion';
 import logo from '../assets/logoF.png';
+import axios from '../api/axiosInstance';
 import { getAuth } from 'firebase/auth';
 
 export default function Login() {
   const { login } = useAuth();
 
-  const handleLogin = async () => {
-    try {
-      await login(); // esto realiza el login con Google
-      const auth = getAuth();
-      const user = auth.currentUser;
-      if (user) {
-        const token = await user.getIdToken();
-        console.log("✅ Token de ID:", token);
-        // Aquí puedes hacer un POST al backend si quieres registrar el usuario, por ejemplo
-      }
-    } catch (error) {
+const handleLogin = async () => {
+  try {
+    await login(); // login con Google
+    const auth = getAuth();
+    const user = auth.currentUser;
+
+    if (user) {
+      const token = await user.getIdToken();
+      console.log("✅ Token de ID:", token);
+
+      // 👉 Axios POST al backend
+      const response = await axios.post('/auth/login', null, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      console.log("✅ Usuario desde backend:", response.data);
+    }
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error("❌ Error en Axios:", error.response?.data || error.message);
+    } else {
       console.error("❌ Error en login:", error);
     }
-  };
+  }
+};
 
   return (
     <div className="min-h-screen flex flex-col sm:flex-row items-center justify-center bg-gradient-to-br from-indigo-500 to-blue-700 px-4">

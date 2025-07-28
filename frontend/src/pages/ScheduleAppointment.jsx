@@ -1,32 +1,23 @@
 import React, { useEffect, useState } from 'react';
-import { db } from '../firebase';
-import {
-  collection,
-  getDocs,
-  addDoc,
-  query,
-  where,
-  doc,
-  getDoc
-} from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { parseISO, getDay } from 'date-fns';
 import { notifySuccess, notifyError } from '../utils/notify';
+import axios from '../api/axiosInstance';
 
 const WEEK_DAYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 
 export default function ScheduleAppointment() {
   const nav = useNavigate();
-  const { user } = useAuth();
+  const { firebaseUser } = useAuth();
 
   const [specialties, setSpecialties] = useState([]);
   const [doctors, setDoctors]         = useState([]);
   const [times, setTimes]             = useState([]);
+  const [backendUser, setBackendUser] = useState(null);
 
-  const [statusMsg, setStatusMsg]     = useState('');
   const [form, setForm] = useState({
     specialty: '',
     doctorId: '',
@@ -34,67 +25,96 @@ export default function ScheduleAppointment() {
     time: ''
   });
 
+  // Obtener especialidades
   useEffect(() => {
-    (async () => {
+    const fetchSpecialties = async () => {
       try {
-        const snap = await getDocs(collection(db, 'doctors'));
-        const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        setDoctors(docs);
-        const uniq = Array.from(new Set(docs.map(d => d.specialty)));
-        setSpecialties(uniq);
-      } catch (err) {
+        const token = await firebaseUser.getIdToken();
+        const res = await axios.get('/specialties', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setSpecialties(res.data);
+      } catch {
+        notifyError('Error al cargar especialidades.');
+      }
+    };
+    fetchSpecialties();
+  }, [firebaseUser]);
+
+  // Obtener usuario logueado del backend
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const token = await firebaseUser.getIdToken();
+        const res = await axios.get(`/users/by-email?email=${firebaseUser.email}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setBackendUser(res.data);
+      } catch {
+        notifyError('Error al obtener el usuario.');
+      }
+    };
+    fetchUser();
+  }, [firebaseUser]);
+
+  // Obtener doctores
+  useEffect(() => {
+    const fetchDoctors = async () => {
+      try {
+        const token = await firebaseUser.getIdToken();
+        const res = await axios.get('/doctors', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setDoctors(res.data);
+      } catch {
         notifyError('Error al cargar los doctores.');
       }
-    })();
-  }, []);
+    };
+    fetchDoctors();
+  }, [firebaseUser]);
 
   const filteredDoctors = doctors.filter(d => d.specialty === form.specialty);
 
   useEffect(() => {
-    async function calcSlots() {
+    const calcSlots = () => {
       if (!form.doctorId || !form.date) {
         setTimes([]);
         return;
       }
+      const doc = doctors.find(d => d.id.toString() === form.doctorId);
+      if (!doc) return;
 
-      try {
-        const docSnap = await getDoc(doc(db, 'doctors', form.doctorId));
-        if (!docSnap.exists()) {
-          setTimes([]);
-          return;
-        }
-        const doctor = docSnap.data();
-
-        const dayIndex = getDay(parseISO(form.date)); // 0=Sunday ... 6=Saturday
-        const dayKey = WEEK_DAYS[dayIndex];
-
-        if (!doctor.days.includes(dayKey)) {
-          setTimes([]);
-          return;
-        }
-
-        const clashSnap = await getDocs(
-          query(
-            collection(db, 'appointments'),
-            where('doctorId', '==', form.doctorId),
-            where('date', '==', form.date)
-          )
-        );
-        const taken = clashSnap.docs.map(d => d.data().time);
-
-        const libres = Array.isArray(doctor.slots)
-          ? doctor.slots.filter(slot => !taken.includes(slot))
-          : [];
-
-        setTimes(libres);
-      } catch (err) {
-        console.error('[Slots] Error:', err);
+      const dayIndex = getDay(parseISO(form.date));
+      const dayKey = WEEK_DAYS[dayIndex];
+      if (!doc.days.includes(dayKey) || doc.slots.length < 2) {
         setTimes([]);
+        return;
       }
-    }
 
+      const generateSlots = (start, end) => {
+        const res = [];
+        const [sh, sm] = start.split(':').map(Number);
+        const [eh, em] = end.split(':').map(Number);
+
+        let cur = new Date();
+        cur.setHours(sh, sm, 0);
+        const endTime = new Date();
+        endTime.setHours(eh, em, 0);
+
+        while (cur <= endTime) {
+          const h = String(cur.getHours()).padStart(2, '0');
+          const m = String(cur.getMinutes()).padStart(2, '0');
+          res.push(`${h}:${m}`);
+          cur.setMinutes(cur.getMinutes() + 30);
+        }
+        return res;
+      };
+
+      const generated = generateSlots(doc.slots[0], doc.slots[1]);
+      setTimes(generated);
+    };
     calcSlots();
-  }, [form.doctorId, form.date]);
+  }, [form.doctorId, form.date, doctors]);
 
   const handleSubmit = async e => {
     e.preventDefault();
@@ -104,141 +124,105 @@ export default function ScheduleAppointment() {
     }
 
     try {
-      const clashSnap = await getDocs(
-        query(
-          collection(db, 'appointments'),
-          where('doctorId', '==', form.doctorId),
-          where('date', '==', form.date),
-          where('time', '==', form.time)
-        )
-      );
-      if (!clashSnap.empty) {
-        notifyError('La fecha ya ha sido agendada');
-        return;
-      }
-
-      await addDoc(collection(db, 'appointments'), {
-        patientId:  user.uid,
-        doctorId:   form.doctorId,
-        specialty:  form.specialty,
-        date:       form.date,
-        time:       form.time,
-        status:     'Pendiente'
+      const token = await firebaseUser.getIdToken();
+      await axios.post('/appointments', {
+        patientId: backendUser.id,
+        doctorId: parseInt(form.doctorId),
+        dateTime: `${form.date}T${form.time}`
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
       });
+
       notifySuccess('Cita agendada exitosamente!');
     } catch (err) {
-      notifyError('Error al agendar la cita, intente más tarde');
+      notifyError('Error al agendar la cita');
     }
   };
 
-  const handleCancel = () => {
-    nav('/');
-  };
-
   return (
-    <>
-      <div className="max-w-md mx-auto p-4">
-        <h2 className="text-xl font-bold mb-4">Agendar cita</h2>
+    <div className="max-w-md mx-auto p-4">
+      <h2 className="text-xl font-bold mb-4">Agendar cita</h2>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Especialidad */}
-          <select
-            className="border p-2 w-full"
-            required
-            value={form.specialty}
-            onChange={e =>
-              setForm({
-                specialty: e.target.value,
-                doctorId: '',
-                date: '',
-                time: ''
-              })
-            }
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Especialidad */}
+        <select
+          className="border p-2 w-full"
+          required
+          value={form.specialty}
+          onChange={e =>
+            setForm({ specialty: e.target.value, doctorId: '', date: '', time: '' })
+          }
+        >
+          <option value="">Especialidad</option>
+          {specialties.map(sp => (
+            <option key={sp.id || sp.name} value={sp.name}>{sp.name}</option>
+          ))}
+        </select>
+
+        {/* Médico */}
+        <select
+          className="border p-2 w-full"
+          required
+          disabled={!filteredDoctors.length}
+          value={form.doctorId}
+          onChange={e =>
+            setForm({ ...form, doctorId: e.target.value, date: '', time: '' })
+          }
+        >
+          <option value="">Médico</option>
+          {filteredDoctors.map(d => (
+            <option key={d.id} value={d.id}>{d.name}</option>
+          ))}
+        </select>
+
+        {/* Fecha específica */}
+        <DatePicker
+          selected={form.date ? parseISO(form.date) : null}
+          onChange={date => {
+            const formatted = date.toISOString().split('T')[0];
+            setForm({ ...form, date: formatted, time: '' });
+          }}
+          filterDate={date => {
+            const selectedDoc = doctors.find(d => d.id.toString() === form.doctorId);
+            if (!selectedDoc) return false;
+            const jsDay = getDay(date);
+            const weekCode = WEEK_DAYS[jsDay];
+            return selectedDoc.days.includes(weekCode);
+          }}
+          placeholderText="Fecha"
+          className="border p-2 w-full"
+        />
+
+        {/* Hora */}
+        <select
+          className="border p-2 w-full"
+          required
+          disabled={!form.date}
+          value={form.time}
+          onChange={e => setForm({ ...form, time: e.target.value })}
+        >
+          <option value="">Hora</option>
+          {times.map(t => (
+            <option key={t} value={t}>{t}</option>
+          ))}
+        </select>
+
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => nav('/')}
+            className="flex-1 py-2 bg-gray-400 text-white rounded"
           >
-            <option value="">Especialidad</option>
-            {specialties.map(sp => (
-              <option key={sp} value={sp}>{sp}</option>
-            ))}
-          </select>
-
-          {/* Médico */}
-          <select
-            className="border p-2 w-full"
-            required
-            disabled={!filteredDoctors.length}
-            value={form.doctorId}
-            onChange={e =>
-              setForm({
-                ...form,
-                doctorId: e.target.value,
-                date: '',
-                time: ''
-              })
-            }
+            Volver
+          </button>
+          <button
+            type="submit"
+            className="flex-1 py-2 bg-indigo-600 text-white rounded"
           >
-            <option value="">Médico</option>
-            {filteredDoctors.map(d => (
-              <option key={d.id} value={d.id}>{d.name}</option>
-            ))}
-          </select>
-
-          {/* Fecha específica */}
-            <DatePicker
-            selected={form.date ? parseISO(form.date) : null}
-            onChange={date => {
-                const formatted = date.toISOString().split('T')[0];
-                setForm({ ...form, date: formatted, time: '' });
-            }}
-            filterDate={date => {
-                const selectedDoc = doctors.find(d => d.id === form.doctorId);
-                if (!selectedDoc) return false;
-                const jsDay = getDay(date); // 0 (Dom) a 6 (Sáb)
-                const weekCode = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][jsDay];
-                return selectedDoc.days.includes(weekCode);
-            }}
-            placeholderText="Fecha"
-            className="border p-2 w-full"
-            />
-
-          {/* Hora */}
-          <select
-            className="border p-2 w-full"
-            required
-            disabled={!form.date}
-            value={form.time}
-            onChange={e => setForm({ ...form, time: e.target.value })}
-          >
-            <option value="">Hora</option>
-            {times.map(t => (
-              <option key={t} value={t}>{t}</option>
-            ))}
-          </select>
-
-          {/* Botones */}
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={handleCancel}
-              className="flex-1 py-2 bg-gray-400 text-white rounded"
-            >
-              Volver
-            </button>
-            <button
-              type="submit"
-              className="flex-1 py-2 bg-indigo-600 text-white rounded"
-            >
-              Guardar
-            </button>
-          </div>
-        </form>
-      </div>
-
-      {/* Mensaje flotante */}
-      {statusMsg && (
-        <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-green-600 text-white px-4 py-2 rounded shadow-lg transition-opacity duration-300">
-          {statusMsg}
+            Guardar
+          </button>
         </div>
-      )}
-    </>
+      </form>
+    </div>
   );
 }

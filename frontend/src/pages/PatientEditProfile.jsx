@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
-import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import axios from '../api/axiosInstance';
 import { notifySuccess, notifyError } from '../utils/notify';
 
 export default function EditProfile() {
-  const { user } = useAuth();
+  const { firebaseUser, backendUser } = useAuth();
   const navigate = useNavigate();
 
   const [form, setForm] = useState({
@@ -16,41 +15,35 @@ export default function EditProfile() {
     email: ''
   });
   const [loading, setLoading] = useState(true);
-
   const [statusMsg, setStatusMsg] = useState('');
 
-  // Cargar datos del usuario desde Firestore
   useEffect(() => {
     async function fetchUserData() {
       try {
-        const docRef = doc(db, 'users', user.uid);
-        const docSnap = await getDoc(docRef);
+        const token = await firebaseUser.getIdToken();
+        const res = await axios.get(`/users/${backendUser.id}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
 
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          setForm({
-            name: data.displayName || 'N/A',
-            address: data.address || 'N/A',
-            phone: data.phone || 'N/A',
-            email: user.email
-          });
-        } else {
-          // Si no hay documento, usamos valores por defecto
-          setForm({
-            name: data.displayName,
-            address: 'N/A',
-            phone: 'N/A',
-            email: user.email
-          });
-        }
+        const data = res.data;
+        setForm({
+          name: data.name || '',
+          address: data.address || '',
+          phone: data.phone || '',
+          email: data.email || ''
+        });
       } catch (err) {
-        notifyError('Ha ocurrido un error al cargar el perfil, intente más tarde');
+        console.error(err);
+        notifyError('Ha ocurrido un error al cargar el perfil.');
       } finally {
         setLoading(false);
       }
     }
-    fetchUserData();
-  }, [user]);
+
+    if (firebaseUser && backendUser?.id) {
+      fetchUserData();
+    }
+  }, [firebaseUser, backendUser]);
 
   const handleChange = (e) => {
     setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
@@ -58,21 +51,27 @@ export default function EditProfile() {
 
   const handleSave = async () => {
     try {
-      await updateDoc(doc(db, 'users', user.uid), {
-        displayName: form.name,
+      const token = await firebaseUser.getIdToken();
+      await axios.put(`/users/${backendUser.id}`, {
+        name: form.name,
         address: form.address,
         phone: form.phone
+      }, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
       });
+
       notifySuccess('Perfil actualizado correctamente!');
     } catch (err) {
-      notifyError('Ocurrió un error al actualizar el perfil, intente más tarde');
+      console.error(err);
+      notifyError('Ocurrió un error al actualizar el perfil.');
     }
   };
 
-if (loading) return <p className="p-4 flex items-center justify-center h-screen">Cargando perfil...</p>;
+  if (loading) return <p className="p-4 flex items-center justify-center h-screen">Cargando perfil...</p>;
 
   return (
-    <>
     <div className="max-w-xl mx-auto p-4">
       <h2 className="text-2xl font-semibold mb-4">Editar Perfil</h2>
 
@@ -133,14 +132,14 @@ if (loading) return <p className="p-4 flex items-center justify-center h-screen"
           >
             Guardar Cambios
           </button>
-        </div>            
-      </div>     
-    </div>   
-    {statusMsg && (
-      <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-green-600 text-white px-4 py-2 rounded shadow-lg transition-opacity duration-300">
-        {statusMsg}
+        </div>
       </div>
-    )}       
-    </> 
+
+      {statusMsg && (
+        <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-green-600 text-white px-4 py-2 rounded shadow-lg transition-opacity duration-300">
+          {statusMsg}
+        </div>
+      )}
+    </div>
   );
 }

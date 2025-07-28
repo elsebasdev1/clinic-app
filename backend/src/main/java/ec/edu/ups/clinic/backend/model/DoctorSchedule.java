@@ -3,7 +3,7 @@ package ec.edu.ups.clinic.backend.model;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "doctor_schedules")
+@Table(name = "doctor_schedule")
 public class DoctorSchedule {
 
     @Id
@@ -11,10 +11,12 @@ public class DoctorSchedule {
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "doctor_id")
+    @JoinColumn(name = "doctor_id", nullable = false)
     private User doctor;
 
-    private String day;    // Ej: "monday", "tuesday", etc.
+    @Column(nullable = false, length = 10)
+    private String day; // Ej: "monday", "tuesday", etc.
+    @Column(nullable = false, length = 5)
     private String time;   // Ej: "09:00", "14:30"
 
     public Long getId() {

@@ -1,80 +1,87 @@
+// src/contexts/AuthContext.jsx
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import {
   GoogleAuthProvider,
   signInWithPopup,
   onAuthStateChanged,
   signOut,
+  getAuth,
 } from 'firebase/auth';
-import {
-  getDoc,
-  doc,
-  setDoc,
-} from 'firebase/firestore';
-import { auth, db } from '../firebase';
-
-const provider = new GoogleAuthProvider();
-provider.setCustomParameters({ prompt: 'select_account' });
+import axios from '../api/axiosInstance';
+import { useNavigate } from 'react-router-dom';
 
 const AuthContext = createContext();
 export const useAuth = () => useContext(AuthContext);
 
 export default function AuthProvider({ children }) {
-  const [user, setUser]     = useState(null);
-  const [role, setRole]     = useState(null);   // 'admin' o 'patient'
-  const [loadingAuth, setLoadingAuth] = useState(true);
+  const [firebaseUser, setFirebaseUser] = useState(null);
+  const [backendUser, setBackendUser]   = useState(null); // viene de PostgreSQL
+  const [loadingAuth, setLoadingAuth]   = useState(true);
 
-  const login  = () => signInWithPopup(auth, provider);
-  const logout = () => signOut(auth);
+  const navigate = useNavigate();
+
+  const provider = new GoogleAuthProvider();
+  provider.setCustomParameters({ prompt: 'select_account' });
+
+  const login = () => signInWithPopup(getAuth(), provider);
+
+  const logout = async () => {
+    await signOut(getAuth());
+    setFirebaseUser(null);
+    setBackendUser(null);
+    navigate('/login');
+  };
 
   useEffect(() => {
-    // Listener de Firebase Auth
+    const auth = getAuth();
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      setLoadingAuth(true);
+
       if (!currentUser) {
-        // No hay usuario autenticado
-        setUser(null);
-        setRole(null);
+        setFirebaseUser(null);
+        setBackendUser(null);
         setLoadingAuth(false);
         return;
       }
 
-      // Usuario autenticado: comprobar (o crear) documento en /users/{uid}
-      const userRef = doc(db, 'users', currentUser.uid);
+      setFirebaseUser(currentUser);
 
       try {
-        const snap = await getDoc(userRef);
-        if (!snap.exists()) {
-          // Si no existe el doc, lo creamos con rol "patient" por defecto
-          await setDoc(userRef, {
-            displayName: currentUser.displayName || '',
-            email:       currentUser.email || '',
-            role:        'patient',
-            createdAt:   new Date()
-          });
-          setRole('patient');
-        } else {
-          // Si ya existe, LEEMOS su campo role (sin sobrescribirlo)
-          const data = snap.data();
-          setRole(data.role || 'patient');
-        }
-      } catch (error) {
-        console.error('Error leyendo o creando /users/{uid}:', error);
-        // En caso de error, forzamos logout para no quedar en estado inconsistente:
-        await signOut(auth);
-        setUser(null);
-        setRole(null);
-        setLoadingAuth(false);
-        return;
-      }
+        const token = await currentUser.getIdToken();
+        const res = await axios.post('/auth/login', null, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
 
-      setUser(currentUser);
-      setLoadingAuth(false);
+        setBackendUser(res.data); // { id, name, email, role }
+
+        // 🚀 Redirigir al dashboard
+        if (res.data.role === 'admin') {
+          navigate('/admin');
+        } else {
+          navigate('/');
+        }
+
+      } catch (err) {
+        console.error("❌ Error al loguear con backend:", err);
+        await logout();
+      } finally {
+        setLoadingAuth(false);
+      }
     });
 
     return () => unsubscribe();
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, role, login, logout, loadingAuth }}>
+    <AuthContext.Provider value={{
+      firebaseUser,
+      backendUser,
+      login,
+      logout,
+      loadingAuth
+    }}>
       {children}
     </AuthContext.Provider>
   );
