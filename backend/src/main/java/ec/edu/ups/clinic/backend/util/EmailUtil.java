@@ -2,11 +2,14 @@ package ec.edu.ups.clinic.backend.util;
 
 import java.util.Properties;
 
+import jakarta.mail.*;
+import jakarta.mail.internet.*;
+
 public class EmailUtil {
 	
 	public static void enviarCorreo(String destino, String asunto, String cuerpo) {
-        final String remitente = "tucorreo@gmail.com"; // Tu correo
-        final String clave = "tu_contraseña"; // Tu contraseña o app password
+        final String remitente = "mhorasantiago2000@gmail.com"; // Tu correo
+        final String clave = "dqay jmki opac ooxd"; // Tu contraseña o app password
 
         Properties props = new Properties();
         props.put("mail.smtp.host", "smtp.gmail.com");

@@ -150,13 +150,6 @@
 			  <version>2.0.1</version>
 			</dependency>
 			
-			<!-- https://mvnrepository.com/artifact/com.google.firebase/firebase-admin -->
-			<dependency>
-			  <groupId>com.google.firebase</groupId>
-			  <artifactId>firebase-admin</artifactId>
-			  <version>9.2.0</version> <!-- o la versión estable actual -->
-			</dependency>
-			
 			<dependency>
 			  <groupId>com.google.auth</groupId>
 			  <artifactId>google-auth-library-oauth2-http</artifactId>
