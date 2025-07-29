@@ -1,39 +1,44 @@
-// src/contexts/AuthContext.jsx
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import {
-  GoogleAuthProvider,
   signInWithPopup,
   onAuthStateChanged,
   signOut,
-  getAuth,
 } from 'firebase/auth';
+import { auth, provider } from '../firebase';
 import axios from '../api/axiosInstance';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
+// Crear el contexto
 const AuthContext = createContext();
+
+// Hook personalizado para consumir el contexto
 export const useAuth = () => useContext(AuthContext);
 
+// Componente proveedor
 export default function AuthProvider({ children }) {
   const [firebaseUser, setFirebaseUser] = useState(null);
-  const [backendUser, setBackendUser]   = useState(null); // viene de PostgreSQL
-  const [loadingAuth, setLoadingAuth]   = useState(true);
+  const [backendUser, setBackendUser] = useState(null);
+  const [loadingAuth, setLoadingAuth] = useState(true);
 
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const provider = new GoogleAuthProvider();
+  // Configuración del proveedor de Google
   provider.setCustomParameters({ prompt: 'select_account' });
 
-  const login = () => signInWithPopup(getAuth(), provider);
+  // Función de login con popup
+  const login = () => signInWithPopup(auth, provider);
 
+  // Función de logout
   const logout = async () => {
-    await signOut(getAuth());
+    await signOut(auth);
     setFirebaseUser(null);
     setBackendUser(null);
     navigate('/login');
   };
 
+  // Efecto para escuchar cambios en el estado de autenticación
   useEffect(() => {
-    const auth = getAuth();
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setLoadingAuth(true);
 
@@ -49,22 +54,25 @@ export default function AuthProvider({ children }) {
       try {
         const token = await currentUser.getIdToken();
         const res = await axios.post('/auth/login', null, {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
+          headers: { Authorization: `Bearer ${token}` },
         });
 
-        setBackendUser(res.data); // { id, name, email, role }
+        const user = res.data;
+        setBackendUser(user);
 
-        // 🚀 Redirigir al dashboard
-        if (res.data.role === 'admin') {
-          navigate('/admin');
+        // Solo redirigir si no está ya en la ruta correcta
+        if (user.role === 'admin') {
+          if (!location.pathname.startsWith('/admin')) {
+            navigate('/admin', { replace: true });
+          }
         } else {
-          navigate('/');
+          if (location.pathname.startsWith('/admin')) {
+            navigate('/', { replace: true });
+          }
         }
 
       } catch (err) {
-        console.error("❌ Error al loguear con backend:", err);
+        console.error('❌ Error al loguear con backend:', err);
         await logout();
       } finally {
         setLoadingAuth(false);
@@ -72,17 +80,19 @@ export default function AuthProvider({ children }) {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [navigate, location.pathname]);
 
   return (
-    <AuthContext.Provider value={{
-      firebaseUser,
-      backendUser,
-      role: backendUser?.role ?? null,
-      login,
-      logout,
-      loadingAuth
-    }}>
+    <AuthContext.Provider
+      value={{
+        firebaseUser,
+        backendUser,
+        role: backendUser?.role ?? null,
+        login,
+        logout,
+        loadingAuth,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

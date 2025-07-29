@@ -122,6 +122,11 @@ export default function ScheduleAppointment() {
       notifyError('Faltan campos por completar');
       return;
     }
+    console.log({
+      patientId: backendUser.id,
+      doctorId: parseInt(form.doctorId),
+      dateTime: `${form.date}T${form.time}`
+    });
 
     try {
       const token = await firebaseUser.getIdToken();

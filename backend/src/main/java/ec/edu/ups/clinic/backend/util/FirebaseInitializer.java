@@ -9,6 +9,7 @@ import jakarta.ejb.Singleton;
 import jakarta.ejb.Startup;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 
 @Startup
 @Singleton
@@ -17,8 +18,7 @@ public class FirebaseInitializer {
     @PostConstruct
     public void init() {
         try {
-            FileInputStream serviceAccount =
-                new FileInputStream("D:\\clinica/clinic-app-tfm-firebase-adminsdk-fbsvc-e81bcfb34e.json"); // ← CAMBIA ESTA RUTA
+        	InputStream serviceAccount = getClass().getClassLoader().getResourceAsStream("firebase/clinic-app-tfm-firebase-adminsdk-fbsvc-e81bcfb34e.json"); // ← CAMBIA ESTA RUTA
 
             FirebaseOptions options = FirebaseOptions.builder()
                 .setCredentials(GoogleCredentials.fromStream(serviceAccount))

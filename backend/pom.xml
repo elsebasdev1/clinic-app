@@ -136,19 +136,7 @@
                 <version>${version.junit5}</version>
                 <type>pom</type>
                 <scope>import</scope>
-            </dependency>
-            <!--Dependencia para notificacion por WhatsApp-->
-            <dependency>
-			  <groupId>com.twilio.sdk</groupId>
-			  <artifactId>twilio</artifactId>
-			  <version>9.12.0</version>
-			</dependency>
-			<!--Dependencia para notificacion por EMAIL-->
-			<dependency>
-			  <groupId>jakarta.mail</groupId>
-			  <artifactId>jakarta.mail-api</artifactId>
-			  <version>2.0.1</version>
-			</dependency>
+            </dependency>            
 			
 			<dependency>
 			  <groupId>com.google.auth</groupId>
@@ -164,12 +152,6 @@
 		  <groupId>com.google.firebase</groupId>
 		  <artifactId>firebase-admin</artifactId>
 		  <version>9.2.0</version>
-		</dependency>
-
-	    <dependency>
-		    <groupId>com.sun.mail</groupId>
-		    <artifactId>jakarta.mail</artifactId>
-		    <version>2.0.1</version>
 		</dependency>
 
         <dependency>
@@ -263,6 +245,19 @@
 		    <version>10.0.0</version>
 		    <scope>provided</scope>
 		</dependency>
+		
+		<!--Dependencia para notificacion por WhatsApp-->
+		<dependency>
+			  <groupId>com.twilio.sdk</groupId>
+			  <artifactId>twilio</artifactId>
+			  <version>9.12.0</version>
+			</dependency>
+			<!--Dependencia para notificacion por EMAIL-->
+			<dependency>
+			  <groupId>jakarta.mail</groupId>
+			  <artifactId>jakarta.mail-api</artifactId>
+			  <version>2.0.1</version>
+			</dependency>
 
     </dependencies>
 
