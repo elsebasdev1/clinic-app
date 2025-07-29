@@ -18,7 +18,7 @@ public class FirebaseInitializer {
     public void init() {
         try {
             FileInputStream serviceAccount =
-                new FileInputStream("C:\\Users\\sebas\\Documents\\Ciclo Computacion\\Materias - Ciclo 5\\3. Programación y Plataformas Web\\Proyecto Final/clinic-app-tfm-firebase-adminsdk-fbsvc-e81bcfb34e.json"); // ← CAMBIA ESTA RUTA
+                new FileInputStream("D:\\clinica/clinic-app-tfm-firebase-adminsdk-fbsvc-e81bcfb34e.json"); // ← CAMBIA ESTA RUTA
 
             FirebaseOptions options = FirebaseOptions.builder()
                 .setCredentials(GoogleCredentials.fromStream(serviceAccount))

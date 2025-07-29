@@ -137,6 +137,32 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+            <!--Dependencia para notificacion por WhatsApp-->
+            <dependency>
+			  <groupId>com.twilio.sdk</groupId>
+			  <artifactId>twilio</artifactId>
+			  <version>9.12.0</version>
+			</dependency>
+			<!--Dependencia para notificacion por EMAIL-->
+			<dependency>
+			  <groupId>jakarta.mail</groupId>
+			  <artifactId>jakarta.mail-api</artifactId>
+			  <version>2.0.1</version>
+			</dependency>
+			
+			<!-- https://mvnrepository.com/artifact/com.google.firebase/firebase-admin -->
+			<dependency>
+			  <groupId>com.google.firebase</groupId>
+			  <artifactId>firebase-admin</artifactId>
+			  <version>9.2.0</version> <!-- o la versión estable actual -->
+			</dependency>
+			
+			<dependency>
+			  <groupId>com.google.auth</groupId>
+			  <artifactId>google-auth-library-oauth2-http</artifactId>
+			  <version>1.18.0</version>
+			</dependency>
+			
         </dependencies>
     </dependencyManagement>
 
@@ -280,7 +306,33 @@
                 <artifactId>wildfly-maven-plugin</artifactId>
                 <version>${version.wildfly.maven.plugin}</version>
             </plugin>
+            
+            <plugin>
+		      <artifactId>maven-war-plugin</artifactId>
+		      <version>3.3.1</version>
+		      <configuration>
+		        <failOnMissingWebXml>false</failOnMissingWebXml>
+		        <packagingExcludes></packagingExcludes>
+		        <archiveClasses>true</archiveClasses>
+		      </configuration>
+		    </plugin>
+		    <plugin>
+		      <groupId>org.apache.maven.plugins</groupId>
+		      <artifactId>maven-dependency-plugin</artifactId>
+		      <executions>
+		        <execution>
+		          <id>copy-dependencies</id>
+		          <phase>prepare-package</phase>
+		          <goals><goal>copy-dependencies</goal></goals>
+		          <configuration>
+		            <outputDirectory>${project.build.directory}/${project.build.finalName}/WEB-INF/lib</outputDirectory>
+		            <includeScope>runtime</includeScope>
+		          </configuration>
+		        </execution>
+		      </executions>
+		    </plugin>
         </plugins>
+        
     </build>
 
 
