@@ -78,6 +78,7 @@ export default function AuthProvider({ children }) {
     <AuthContext.Provider value={{
       firebaseUser,
       backendUser,
+      role: backendUser?.role ?? null,
       login,
       logout,
       loadingAuth
