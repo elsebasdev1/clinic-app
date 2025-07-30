@@ -1,10 +1,12 @@
 package ec.edu.ups.clinic.backend.model;
 
+import java.io.Serializable;
+
 import jakarta.persistence.*;
 
 @Entity
 @Table(name = "doctor_schedule")
-public class DoctorSchedule {
+public class DoctorSchedule implements Serializable{
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

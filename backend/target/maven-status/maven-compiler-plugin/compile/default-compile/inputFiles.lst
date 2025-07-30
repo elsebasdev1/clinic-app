@@ -1,7 +1,27 @@
-C:\Users\sebas\Documents\Ciclo Computacion\Materias - Ciclo 5\3. Programación y Plataformas Web\clinic-app\backend\src\main\java\ec\edu\ups\clinic\backend\dao\AppointmentDAO.java
-C:\Users\sebas\Documents\Ciclo Computacion\Materias - Ciclo 5\3. Programación y Plataformas Web\clinic-app\backend\src\main\java\ec\edu\ups\clinic\backend\dao\UserDAO.java
-C:\Users\sebas\Documents\Ciclo Computacion\Materias - Ciclo 5\3. Programación y Plataformas Web\clinic-app\backend\src\main\java\ec\edu\ups\clinic\backend\model\Appointment.java
-C:\Users\sebas\Documents\Ciclo Computacion\Materias - Ciclo 5\3. Programación y Plataformas Web\clinic-app\backend\src\main\java\ec\edu\ups\clinic\backend\model\User.java
-C:\Users\sebas\Documents\Ciclo Computacion\Materias - Ciclo 5\3. Programación y Plataformas Web\clinic-app\backend\src\main\java\ec\edu\ups\clinic\backend\services\AppointmentServiceREST.java
-C:\Users\sebas\Documents\Ciclo Computacion\Materias - Ciclo 5\3. Programación y Plataformas Web\clinic-app\backend\src\main\java\ec\edu\ups\clinic\backend\services\RESTApplication.java
-C:\Users\sebas\Documents\Ciclo Computacion\Materias - Ciclo 5\3. Programación y Plataformas Web\clinic-app\backend\src\main\java\ec\edu\ups\clinic\backend\services\UserServiceREST.java
+D:\clinica\clinic-app\backend\src\main\java\ec\edu\ups\clinic\backend\dao\AdminReportDAO.java
+D:\clinica\clinic-app\backend\src\main\java\ec\edu\ups\clinic\backend\dao\AppointmentDAO.java
+D:\clinica\clinic-app\backend\src\main\java\ec\edu\ups\clinic\backend\dao\DoctorScheduleDAO.java
+D:\clinica\clinic-app\backend\src\main\java\ec\edu\ups\clinic\backend\dao\SpecialtyDAO.java
+D:\clinica\clinic-app\backend\src\main\java\ec\edu\ups\clinic\backend\dao\UserDAO.java
+D:\clinica\clinic-app\backend\src\main\java\ec\edu\ups\clinic\backend\dto\AppointmentDTO.java
+D:\clinica\clinic-app\backend\src\main\java\ec\edu\ups\clinic\backend\dto\DoctorDTO.java
+D:\clinica\clinic-app\backend\src\main\java\ec\edu\ups\clinic\backend\model\AdminReport.java
+D:\clinica\clinic-app\backend\src\main\java\ec\edu\ups\clinic\backend\model\Appointment.java
+D:\clinica\clinic-app\backend\src\main\java\ec\edu\ups\clinic\backend\model\DoctorSchedule.java
+D:\clinica\clinic-app\backend\src\main\java\ec\edu\ups\clinic\backend\model\Specialty.java
+D:\clinica\clinic-app\backend\src\main\java\ec\edu\ups\clinic\backend\model\User.java
+D:\clinica\clinic-app\backend\src\main\java\ec\edu\ups\clinic\backend\services\AdminReportServiceREST.java
+D:\clinica\clinic-app\backend\src\main\java\ec\edu\ups\clinic\backend\services\AppointmentServiceREST.java
+D:\clinica\clinic-app\backend\src\main\java\ec\edu\ups\clinic\backend\services\CORSFilter.java
+D:\clinica\clinic-app\backend\src\main\java\ec\edu\ups\clinic\backend\services\DoctorScheduleServiceREST.java
+D:\clinica\clinic-app\backend\src\main\java\ec\edu\ups\clinic\backend\services\DoctorServiceREST.java
+D:\clinica\clinic-app\backend\src\main\java\ec\edu\ups\clinic\backend\services\FirebaseLoginService.java
+D:\clinica\clinic-app\backend\src\main\java\ec\edu\ups\clinic\backend\services\HistoryResourceREST.java
+D:\clinica\clinic-app\backend\src\main\java\ec\edu\ups\clinic\backend\services\RESTApplication.java
+D:\clinica\clinic-app\backend\src\main\java\ec\edu\ups\clinic\backend\services\SpecialtyServiceREST.java
+D:\clinica\clinic-app\backend\src\main\java\ec\edu\ups\clinic\backend\services\UserServiceREST.java
+D:\clinica\clinic-app\backend\src\main\java\ec\edu\ups\clinic\backend\util\EmailService.java
+D:\clinica\clinic-app\backend\src\main\java\ec\edu\ups\clinic\backend\util\EmailUtil.java
+D:\clinica\clinic-app\backend\src\main\java\ec\edu\ups\clinic\backend\util\FirebaseInitializer.java
+D:\clinica\clinic-app\backend\src\main\java\ec\edu\ups\clinic\backend\util\FirebaseTokenFilter.java
+D:\clinica\clinic-app\backend\src\main\java\ec\edu\ups\clinic\backend\util\WhatsAppUtil.java

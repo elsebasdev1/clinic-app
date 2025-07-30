@@ -8,6 +8,7 @@ import { format, parseISO, getDay } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { notifySuccess, notifyError } from '../utils/notify';
 
+
 const WEEK = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 
 export default function PatientDashboard() {
@@ -35,13 +36,43 @@ export default function PatientDashboard() {
         headers: { Authorization: `Bearer ${token}` }
       });
       const all = res.data;
-      const mine = all.filter(a => a.patientId === firebaseUser.uid);
+      const mine = res.data.filter(a => a.patient?.email === firebaseUser.email);
       setAppointments(mine);
     } catch (err) {
       console.error("Error al cargar citas", err);
       notifyError("No se pudieron cargar las citas");
     }
   };
+
+
+
+  const downloadPDF = async (appointmentId) => {
+  try {
+    const token = await firebaseUser.getIdToken();
+    const response = await axios.get(`/appointments/${appointmentId}/pdf`, {
+      responseType: 'blob',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const blob = new Blob([response.data], { type: 'application/pdf' });
+    const url = window.URL.createObjectURL(blob);
+
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `cita_${appointmentId}.pdf`;
+    link.click();
+
+    window.URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error('Error al descargar el PDF:', error);
+    alert('No se pudo descargar el PDF. ¿Estás autenticado?');
+  }
+};
+
+
+
 
   const fetchDoctors = async () => {
     try {
@@ -176,6 +207,8 @@ export default function PatientDashboard() {
     }
   };
 
+
+
   const visibleAppointments = appointments.filter(appt => {
     if (statusFilter !== 'all' && appt.status !== statusFilter) return false;
     if (searchTerm.trim()) {
@@ -218,32 +251,43 @@ export default function PatientDashboard() {
       ) : (
         <ul className="space-y-4">
           {visibleAppointments.map(appt => {
-            const doctorName = doctorsMap[appt.doctorId] || 'Desconocido';
+            const doctorName = appt.doctor?.name || doctorsMap[appt.doctorId] || 'Desconocido';
+            const specialtyName = appt.specialty || appt.doctor?.specialty?.name || 'N/A';
             const isEditing = editingId === appt.id;
-            const isPending = appt.status === 'Pendiente';
+            const isPending = appt.status?.toUpperCase() === 'PENDIENTE';
+
+            const dateObj = Array.isArray(appt.dateTime) && appt.dateTime.length >= 5
+              ? new Date(...appt.dateTime)
+              : null;
             return (
               <li key={appt.id} className="relative bg-white rounded-lg shadow">
                 <span className={`absolute -top-3 left-4 px-3 py-1 rounded-full text-xs font-semibold shadow
-                  ${appt.status === 'Confirmada' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                  ${appt.status === 'CONFIRMADA' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
                   {appt.status}
                 </span>
                 <div className="p-4 flex flex-col sm:flex-row justify-between items-start text-base space-y-2 sm:space-y-0 sm:space-x-4">
                   <div className="space-y-1">
-                    <p><strong>Médico:</strong> {doctorName}</p>
-                    <p><strong>Especialidad:</strong> {appt.specialty}</p>
-                    <p><strong>Fecha:</strong> {formatDate(appt.date)}</p>
-                    <p><strong>Hora:</strong> {appt.time}</p>
+                  <p><strong>Médico:</strong> {doctorName}</p>
+                  <p><strong>Especialidad:</strong> {specialtyName}</p>
+                  <p><strong>Fecha:</strong> {dateObj ? format(dateObj, "EEEE, dd 'de' MMMM 'del' yyyy", { locale: es }) : 'N/A'}</p>
+                  <p><strong>Hora:</strong> {dateObj ? `${String(dateObj.getHours()).padStart(2, '0')}:${String(dateObj.getMinutes()).padStart(2, '0')}` : 'N/A'}</p>
                   </div>
                   <div className="flex flex-col gap-2 items-end self-center sm:w-[200px] ml-auto">
-                    {!isEditing && isPending && (
+                    {!isEditing && (
                       <div className="flex gap-2 flex-wrap">
                         <button onClick={() => startEditing(appt)} className="px-3 py-1 bg-blue-500 text-white rounded">Editar</button>
                         <button onClick={() => deleteAppointment(appt.id)} className="px-3 py-1 bg-red-500 text-white rounded">Cancelar Cita</button>
+                        <button
+                          onClick={() => downloadPDF(appt.id)}
+                          className="px-3 py-1 bg-indigo-600 text-white rounded"
+                        >
+                          Descargar PDF
+                        </button>
                       </div>
                     )}
                   </div>
                 </div>
-                {isEditing && isPending && (
+                {isEditing && (
                   <div className="border-t px-4 py-4 bg-gray-50">
                     <h3 className="font-medium mb-2">Editar Cita</h3>
                     <div className="space-y-3">

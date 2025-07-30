@@ -8,7 +8,7 @@ import java.util.Properties;
 public class EmailService {
 
     private static final String USERNAME = "tucorreo@gmail.com";
-    private static final String PASSWORD = "tu_contraseña_o_clave_app";
+    private static final String PASSWORD = "tu_contraseña";
 
     public static void sendEmail(String to, String subject, String body) {
         Properties props = new Properties();
