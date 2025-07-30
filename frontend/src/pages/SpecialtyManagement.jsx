@@ -8,6 +8,7 @@ export default function SpecialtyManagement() {
   const nav = useNavigate();
   const { firebaseUser } = useAuth();
   const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
   const [specialties, setSpecialties] = useState([]);
 
   useEffect(() => {
@@ -32,10 +33,14 @@ export default function SpecialtyManagement() {
 
     try {
       const token = await firebaseUser.getIdToken();
-      await axios.post('/specialties', { name: name.trim() }, {
+      await axios.post('/specialties', {
+        name: name.trim(),
+        description: description.trim() || null
+      }, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setName('');
+      setDescription('');
       loadSpecialties();
       notifySuccess('Especialidad agregada correctamente!');
     } catch (error) {
@@ -46,24 +51,19 @@ export default function SpecialtyManagement() {
   const removeSpecialty = async (id, specialtyName) => {
     try {
       const token = await firebaseUser.getIdToken();
-
-      const res = await axios.get(`/appointments/by-specialty?name=${specialtyName}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
-      if (res.data && res.data.length > 0) {
-        notifyError('No se puede eliminar. Esta especialidad tiene citas agendadas.');
-        return;
-      }
-
       if (!window.confirm(`¿Está seguro de eliminar esta especialidad?`)) return;
 
       await axios.delete(`/specialties/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       loadSpecialties();
+      notifySuccess('Especialidad eliminada correctamente!');
     } catch (error) {
-      notifyError('Error al eliminar especialidad');
+      if (error.response && error.response.status === 400) {
+        notifyError('No se puede eliminar. Esta especialidad tiene citas agendadas.');
+      } else {
+        notifyError('Error al eliminar especialidad');
+      }
     }
   };
 
@@ -73,13 +73,20 @@ export default function SpecialtyManagement() {
         <h2 className="text-2xl font-semibold">Especialidades</h2>
       </header>
 
-      <form onSubmit={addSpecialty} className="mb-6 flex gap-2">
+      <form onSubmit={addSpecialty} className="mb-6 flex flex-col md:flex-row gap-2">
         <input
           type="text"
           value={name}
           onChange={e => setName(e.target.value)}
           placeholder="Nombre de especialidad"
-          className="border p-2 flex-1 rounded"
+          className="border p-2 rounded flex-1"
+        />
+        <input
+          type="text"
+          value={description}
+          onChange={e => setDescription(e.target.value)}
+          placeholder="Descripción (opcional)"
+          className="border p-2 rounded flex-1"
         />
         <button className="px-4 py-2 bg-green-600 text-white rounded-md">
           Agregar
@@ -88,14 +95,21 @@ export default function SpecialtyManagement() {
 
       <ul className="space-y-2">
         {specialties.map(spec => (
-          <li key={spec.id} className="flex justify-between items-center p-3 bg-white shadow rounded">
-            <span>{spec.name}</span>
-            <button
-              onClick={() => removeSpecialty(spec.id, spec.name)}
-              className="text-red-600"
-            >
-              Eliminar
-            </button>
+          <li key={spec.id} className="p-3 bg-white shadow rounded">
+            <div className="flex justify-between items-center">
+              <div>
+                <span className="font-semibold">{spec.name}</span>
+                {spec.description && (
+                  <p className="text-sm text-gray-600">{spec.description}</p>
+                )}
+              </div>
+              <button
+                onClick={() => removeSpecialty(spec.id, spec.name)}
+                className="text-red-600"
+              >
+                Eliminar
+              </button>
+            </div>
           </li>
         ))}
       </ul>
