@@ -24,6 +24,7 @@ export default function AdminDashboard() {
   const [usersMap, setUsersMap] = useState({});
   const [statusFilter, setStatusFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+  
 
   useEffect(() => {
     fetchAppointments();
@@ -37,7 +38,9 @@ export default function AdminDashboard() {
       const res = await axios.get('/appointments', {
         headers: { Authorization: `Bearer ${token}` },
       });
+      console.log("Appointments data:", res.data);
       setAppointments(res.data);
+
     } catch (err) {
       notifyError('Error al cargar citas');
     }
@@ -147,23 +150,29 @@ export default function AdminDashboard() {
       ) : (
         <ul className="space-y-4">
           {filteredAppointments.map(appt => {
-            const doctorName = doctorsMap[appt.doctorId] || '—';
-            const userData = usersMap[appt.patientId];
-            const patientName = userData?.name || appt.patientId;
-            const patientAddress = userData?.address || 'N/A';
-            const patientPhone = userData?.phone || 'N/A';
+          const doctorName = appt.doctor?.name || '—';
+          const specialtyName = appt.doctor?.specialty?.name || 'N/A';
+          const patientName = appt.patient?.name || 'N/A';
+          const patientAddress = appt.patient?.address || 'N/A';
+          const patientPhone = appt.patient?.phone || 'N/A';
+
+          const dateObj = Array.isArray(appt.dateTime) && appt.dateTime.length >= 5
+            ? new Date(...appt.dateTime)
+            : null;
+
 
             return (
               <li key={appt.id} className="relative p-4 bg-white rounded-lg shadow flex flex-col sm:flex-row justify-between items-start sm:items-stretch max-w-4xl mx-auto">
-                <span className={`absolute -top-3 left-4 px-3 py-1 rounded-full text-xs font-semibold shadow ${appt.status === 'Confirmada' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                <span className={`absolute -top-3 left-4 px-3 py-1 rounded-full text-xs font-semibold shadow ${appt.status === 'CONFIRMADA' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
                   {appt.status}
                 </span>
                 <div className="flex flex-col sm:flex-row sm:justify-between w-full gap-4">
                   <div className="flex-1 space-y-1">
                     <p><strong>Médico:</strong> {doctorName}</p>
-                    <p><strong>Especialidad:</strong> {appt.specialty}</p>
-                    <p><strong>Fecha:</strong> {formatDate(appt.date)}</p>
-                    <p><strong>Hora:</strong> {appt.time}</p>
+                    <p><strong>Especialidad:</strong> {specialtyName}</p>
+                    <p><strong>Fecha:</strong> {dateObj ? format(dateObj, "EEEE, dd 'de' MMMM 'del' yyyy", { locale: es }) : 'N/A'}</p>
+                    <p><strong>Hora:</strong> {dateObj ? `${String(dateObj.getHours()).padStart(2, '0')}:${String(dateObj.getMinutes()).padStart(2, '0')}` : 'N/A'}</p>
+
                   </div>
                   <div className="flex-1 space-y-1">
                     <h3 className="font-semibold text-gray-700 mb-1">Información del Paciente</h3>
@@ -173,7 +182,7 @@ export default function AdminDashboard() {
                   </div>
                 </div>
                 <div className="flex flex-col justify-center items-end gap-2 sm:w-[200px] ml-auto self-center">
-                  {appt.status === 'Pendiente' && (
+                  {appt.status?.toUpperCase() === 'PENDIENTE' && (
                     <>
                       <button onClick={() => confirmAppointment(appt.id)} className="px-4 py-2 bg-green-600 text-white rounded-md">Confirmar</button>
                       <button onClick={() => deleteAppointment(appt.id)} className="px-4 py-2 bg-red-500 text-white rounded-md">Descartar</button>
