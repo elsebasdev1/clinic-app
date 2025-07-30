@@ -8,6 +8,7 @@ import { format, parseISO, getDay } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { notifySuccess, notifyError } from '../utils/notify';
 
+
 const WEEK = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 
 export default function PatientDashboard() {
@@ -42,6 +43,36 @@ export default function PatientDashboard() {
       notifyError("No se pudieron cargar las citas");
     }
   };
+
+
+
+  const downloadPDF = async (appointmentId) => {
+  try {
+    const token = await firebaseUser.getIdToken();
+    const response = await axios.get(`/appointments/${appointmentId}/pdf`, {
+      responseType: 'blob',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const blob = new Blob([response.data], { type: 'application/pdf' });
+    const url = window.URL.createObjectURL(blob);
+
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `cita_${appointmentId}.pdf`;
+    link.click();
+
+    window.URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error('Error al descargar el PDF:', error);
+    alert('No se pudo descargar el PDF. ¿Estás autenticado?');
+  }
+};
+
+
+
 
   const fetchDoctors = async () => {
     try {
@@ -242,15 +273,21 @@ export default function PatientDashboard() {
                   <p><strong>Hora:</strong> {dateObj ? `${String(dateObj.getHours()).padStart(2, '0')}:${String(dateObj.getMinutes()).padStart(2, '0')}` : 'N/A'}</p>
                   </div>
                   <div className="flex flex-col gap-2 items-end self-center sm:w-[200px] ml-auto">
-                    {!isEditing && isPending && (
+                    {!isEditing && (
                       <div className="flex gap-2 flex-wrap">
                         <button onClick={() => startEditing(appt)} className="px-3 py-1 bg-blue-500 text-white rounded">Editar</button>
                         <button onClick={() => deleteAppointment(appt.id)} className="px-3 py-1 bg-red-500 text-white rounded">Cancelar Cita</button>
+                        <button
+                          onClick={() => downloadPDF(appt.id)}
+                          className="px-3 py-1 bg-indigo-600 text-white rounded"
+                        >
+                          Descargar PDF
+                        </button>
                       </div>
                     )}
                   </div>
                 </div>
-                {isEditing && isPending && (
+                {isEditing && (
                   <div className="border-t px-4 py-4 bg-gray-50">
                     <h3 className="font-medium mb-2">Editar Cita</h3>
                     <div className="space-y-3">
