@@ -109,6 +109,71 @@ export default function AdminDashboard() {
     }
   };
 
+  const downloadDoctorReportPdf = async () => {
+  try {
+    const token = await firebaseUser.getIdToken();
+    const response = await axios.get('/appointments/reporte-doctores/pdf', {
+      responseType: 'blob',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'reporte_citas_por_doctor.pdf');
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  } catch (err) {
+    notifyError('Error al descargar el reporte completo de doctores');
+    console.error(err);
+  }
+};
+
+  const downloadSpecialtyReportPdf = async () => {
+  try {
+    const token = await firebaseUser.getIdToken();
+    const response = await axios.get('/appointments/reporte-especialidades/pdf', {
+      responseType: 'blob',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'reporte_citas_por_especialidad.pdf');
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  } catch (err) {
+    notifyError('Error al descargar el reporte por especialidades');
+    console.error(err);
+  }
+};
+
+
+  const downloadOccupationReportPdf = async () => {
+  try {
+    const token = await firebaseUser.getIdToken();
+    const response = await axios.get('/appointments/reporte-ocupacion/pdf', {
+      responseType: 'blob',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'reporte_ocupacion_doctores.pdf');
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  } catch (err) {
+    console.error(err);
+    alert("Error al descargar el reporte");
+  }
+};
+
+
   const filteredAppointments = appointments.filter(appt => {
     if (statusFilter !== 'all' && appt.status !== statusFilter) return false;
     const doctorName = doctorsMap[appt.doctorId] || 'N/A';
@@ -128,6 +193,11 @@ export default function AdminDashboard() {
           <button onClick={() => nav('/admin/doctors')} className="px-4 py-2 bg-green-600 text-white rounded-md">Médicos</button>
           <button onClick={() => nav('/admin/users')} className="px-4 py-2 bg-blue-600 text-white rounded-md">Usuarios</button>
           <button onClick={logout} className="px-4 py-2 bg-red-500 text-white rounded-md">Salir</button>
+          <button onClick={downloadDoctorReportPdf} className="px-4 py-2 bg-orange-600 text-white rounded-md">Reporte Doctores</button>
+          <button onClick={downloadSpecialtyReportPdf} className="px-4 py-2 bg-pink-600 text-white rounded-md">Reporte Especialidad</button>
+          <button onClick={downloadOccupationReportPdf} className="px-4 py-2 bg-purple-600 text-white rounded-md">Reporte Ocupación</button>
+
+
         </div>
       </header>
 

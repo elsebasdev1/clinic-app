@@ -252,7 +252,7 @@ export default function PatientDashboard() {
         <ul className="space-y-4">
           {visibleAppointments.map(appt => {
             const doctorName = appt.doctor?.name || doctorsMap[appt.doctorId] || 'Desconocido';
-            const specialtyName = appt.specialty || appt.doctor?.specialty?.name || 'N/A';
+            const specialtyName = appt.specialty?.name || appt.doctor?.specialty?.name || 'N/A';
             const isEditing = editingId === appt.id;
             const isPending = appt.status?.toUpperCase() === 'PENDIENTE';
 

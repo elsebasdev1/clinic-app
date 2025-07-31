@@ -122,17 +122,23 @@ export default function ScheduleAppointment() {
       notifyError('Faltan campos por completar');
       return;
     }
+
+    const selectedSpecialty = specialties.find(s => s.name === form.specialty);
+
     console.log({
       patientId: backendUser.id,
       doctorId: parseInt(form.doctorId),
+      specialtyId: selectedSpecialty ? selectedSpecialty.id : null,
       dateTime: `${form.date}T${form.time}`
     });
+
 
     try {
       const token = await firebaseUser.getIdToken();
       await axios.post('/appointments', {
         patientId: backendUser.id,
         doctorId: parseInt(form.doctorId),
+        specialtyId: selectedSpecialty ? selectedSpecialty.id : null, 
         dateTime: `${form.date}T${form.time}`
       }, {
         headers: { Authorization: `Bearer ${token}` }
