@@ -2,7 +2,6 @@ import React, { useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { FcGoogle } from 'react-icons/fc';
 import { motion } from 'framer-motion';
-import logo from '../assets/logoF.png';
 import axios from '../api/axiosInstance';
 import { getAuth } from 'firebase/auth';
 
