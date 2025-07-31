@@ -13,13 +13,13 @@ public class WhatsAppUtil {
     public static void enviarMensaje(String to, String mensajeTexto) {
         Twilio.init(ACCOUNT_SID, AUTH_TOKEN);
 
-        Message message = Message.creator(
+        /*Message message = Message.creator(
                 new PhoneNumber("whatsapp:" + to),
                 new PhoneNumber(FROM),
                 mensajeTexto
         ).create();
 
-        System.out.println("Mensaje enviado con SID: " + message.getSid());
+        System.out.println("Mensaje enviado con SID: " + message.getSid());*/
     }
 
 }

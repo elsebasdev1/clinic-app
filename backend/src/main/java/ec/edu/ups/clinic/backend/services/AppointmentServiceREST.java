@@ -15,19 +15,15 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import com.itextpdf.kernel.colors.Color;
-import com.itextpdf.kernel.colors.ColorConstants;
-import com.itextpdf.text.BaseColor;
+
 import com.itextpdf.text.Document;
 import com.itextpdf.text.Element;
-import com.itextpdf.text.Font;
 import com.itextpdf.text.FontFactory;
 import com.itextpdf.text.PageSize;
 import com.itextpdf.text.Paragraph;
-import com.itextpdf.text.pdf.PdfDocument;
 import com.itextpdf.text.pdf.PdfWriter;
-import com.itextpdf.text.pdf.draw.LineSeparator;
-import com.itextpdf.layout.property.TextAlignment;
+
+
 
 @Path("/appointments")
 @Produces(MediaType.APPLICATION_JSON)
@@ -57,8 +53,9 @@ public class AppointmentServiceREST {
             // Buscar entidades
             var patient = em.find(ec.edu.ups.clinic.backend.model.User.class, dto.getPatientId());
             var doctor = em.find(ec.edu.ups.clinic.backend.model.User.class, dto.getDoctorId());
+            var specialty = em.find(ec.edu.ups.clinic.backend.model.Specialty.class, dto.getSpecialtyId());
 
-            if (patient == null || doctor == null) {
+            if (patient == null || doctor == null || specialty == null) {
                 return Response.status(Response.Status.BAD_REQUEST)
                                .entity("Paciente o doctor no encontrado").build();
             }
@@ -67,16 +64,22 @@ public class AppointmentServiceREST {
             var appointment = new Appointment();
             appointment.setPatient(patient);
             appointment.setDoctor(doctor);
+            appointment.setSpecialty(specialty);
             appointment.setDateTime(LocalDateTime.parse(dto.getDateTime()));
             appointment.setStatus("PENDIENTE");
 
             appointmentDAO.insert(appointment);
 
             // Notificaciones
-            WhatsAppUtil.enviarMensaje(
-                patient.getPhone(),
-                "Hola " + patient.getName() + ", recuerda que tu cita es el " + appointment.getDateTime()
-            );
+            try {
+            	WhatsAppUtil.enviarMensaje(
+                        patient.getPhone(),
+                        "Hola " + patient.getName() + ", recuerda que tu cita es el " + appointment.getDateTime()
+                    );
+				
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 
             EmailUtil.enviarCorreo(
                 patient.getEmail(),
@@ -186,6 +189,156 @@ public class AppointmentServiceREST {
                        .header("Content-Disposition", "attachment; filename=cita_" + id + ".pdf")
                        .build();
     }
+
+    @GET
+    @Path("/reporte-doctores/pdf")
+    @Produces("application/pdf")
+    public Response generateFullDoctorsReportPdf() {
+        List<Object[]> doctorStats = appointmentDAO.getAppointmentCountPerDoctor();
+
+        if (doctorStats.isEmpty()) {
+            return Response.status(Response.Status.NO_CONTENT).build();
+        }
+
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        Document doc = new Document(PageSize.A4, 50, 50, 50, 50);
+
+        try {
+            PdfWriter.getInstance(doc, out);
+            doc.open();
+
+            Paragraph title = new Paragraph("REPORTE DE CITAS POR DOCTOR", FontFactory.getFont(FontFactory.HELVETICA_BOLD, 16));
+            title.setAlignment(Element.ALIGN_CENTER);
+            doc.add(title);
+
+            doc.add(new Paragraph(" "));
+            doc.add(new Paragraph("Fecha de generación: " + LocalDate.now()));
+            doc.add(new Paragraph(" "));
+
+            for (Object[] row : doctorStats) {
+                String doctorName = (String) row[0];
+                Long totalCitas = (Long) row[1];
+
+                doc.add(new Paragraph("Doctor: " + doctorName));
+                doc.add(new Paragraph("Total de Citas: " + totalCitas));
+                doc.add(new Paragraph(" "));
+            }
+
+            doc.add(new Paragraph("Fin del reporte.", FontFactory.getFont(FontFactory.HELVETICA_OBLIQUE, 10)));
+
+            doc.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Response.serverError().entity("Error al generar el PDF").build();
+        }
+
+        return Response.ok(new ByteArrayInputStream(out.toByteArray()))
+                       .header("Content-Disposition", "attachment; filename=reporte_citas_por_doctor.pdf")
+                       .build();
+    }
+    
+    @GET
+    @Path("/reporte-especialidades/pdf")
+    @Produces("application/pdf")
+    public Response downloadSpecialtyReportPdf() {
+        List<Object[]> specialtyStats = appointmentDAO.getAppointmentCountPerSpecialty();
+
+        if (specialtyStats == null || specialtyStats.isEmpty()) {
+            return Response.status(Response.Status.NO_CONTENT).build();
+        }
+
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        Document doc = new Document(PageSize.A4, 50, 50, 50, 50);
+
+        try {
+            PdfWriter.getInstance(doc, out);
+            doc.open();
+
+            // Título
+            Paragraph title = new Paragraph("REPORTE DE CITAS POR ESPECIALIDAD",
+                    FontFactory.getFont(FontFactory.HELVETICA_BOLD, 16));
+            title.setAlignment(Element.ALIGN_CENTER);
+            doc.add(title);
+
+            doc.add(new Paragraph(" "));
+            doc.add(new Paragraph("Fecha de generación: " + LocalDate.now()));
+            doc.add(new Paragraph(" "));
+
+            // Datos por especialidad
+            for (Object[] row : specialtyStats) {
+                String specialtyName = (String) row[0];
+                Long totalCitas = (Long) row[1];
+
+                doc.add(new Paragraph("Especialidad: " + specialtyName,
+                        FontFactory.getFont(FontFactory.HELVETICA_BOLD, 12)));
+                doc.add(new Paragraph("Total de Citas: " + totalCitas));
+                doc.add(new Paragraph(" "));
+            }
+
+            doc.add(new Paragraph("Fin del reporte.",
+                    FontFactory.getFont(FontFactory.HELVETICA_OBLIQUE, 10)));
+
+            doc.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Response.serverError().entity("Error al generar el PDF").build();
+        }
+
+        return Response.ok(new ByteArrayInputStream(out.toByteArray()))
+                .header("Content-Disposition", "attachment; filename=reporte_citas_por_especialidad.pdf")
+                .build();
+    }
+
+    
+    @GET
+    @Path("/reporte-ocupacion/pdf")
+    @Produces("application/pdf")
+    public Response generateDoctorOccupationReportPdf() {
+        List<Object[]> report = appointmentDAO.getDoctorOccupationReport();
+
+        if (report.isEmpty()) {
+            return Response.status(Response.Status.NO_CONTENT).build();
+        }
+
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        Document doc = new Document(PageSize.A4, 50, 50, 50, 50);
+
+        try {
+            PdfWriter.getInstance(doc, out);
+            doc.open();
+
+            Paragraph title = new Paragraph("REPORTE DE OCUPACIÓN DE DOCTORES", FontFactory.getFont(FontFactory.HELVETICA_BOLD, 16));
+            title.setAlignment(Element.ALIGN_CENTER);
+            doc.add(title);
+
+            doc.add(new Paragraph(" "));
+            doc.add(new Paragraph("Fecha de generación: " + LocalDate.now()));
+            doc.add(new Paragraph(" "));
+
+            for (Object[] row : report) {
+                String doctorName = (String) row[0];
+                int totalAvailable = (Integer) row[1];
+                int occupied = (Integer) row[2];
+                double porcentaje = totalAvailable > 0 ? (occupied * 100.0) / totalAvailable : 0;
+
+                doc.add(new Paragraph("Doctor: " + doctorName));
+                doc.add(new Paragraph("Tiempo disponible (min): " + totalAvailable));
+                doc.add(new Paragraph("Tiempo ocupado (min): " + occupied));
+                doc.add(new Paragraph("Porcentaje ocupado: " + String.format("%.2f", porcentaje) + "%"));
+                doc.add(new Paragraph(" "));
+            }
+
+            doc.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Response.serverError().entity("Error al generar el PDF").build();
+        }
+
+        return Response.ok(new ByteArrayInputStream(out.toByteArray()))
+                       .header("Content-Disposition", "attachment; filename=reporte_ocupacion_doctores.pdf")
+                       .build();
+    }
+
 
 
 }

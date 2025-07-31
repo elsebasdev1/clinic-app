@@ -1,12 +1,14 @@
 package ec.edu.ups.clinic.backend.dao;
 
 import ec.edu.ups.clinic.backend.model.Appointment;
+import ec.edu.ups.clinic.backend.model.DoctorSchedule;
+import ec.edu.ups.clinic.backend.model.User;
 import jakarta.ejb.Stateless;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.TypedQuery;
-
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Stateless
@@ -55,6 +57,7 @@ public class AppointmentDAO {
                  .setParameter("now", LocalDateTime.now())
                  .getResultList();
     }
+    
 
     // ✅ Filtro por fecha, especialidad, estado (todos opcionales)
     public List<Appointment> filterAppointments(LocalDateTime from, LocalDateTime to, String specialty, String status) {
@@ -89,4 +92,63 @@ public class AppointmentDAO {
 
         return query.getResultList();
     }
+    
+    public List<Appointment> findBySpecialtyId(Long id) {
+        return em.createQuery(
+            "SELECT a FROM Appointment a WHERE a.specialty.id = :id", Appointment.class)
+            .setParameter("id", id)
+            .getResultList();
+    }
+    
+    public List<Object[]> getAppointmentCountPerDoctor() {
+        String jpql = "SELECT a.doctor.name, COUNT(a) " +
+                      "FROM Appointment a " +
+                      "GROUP BY a.doctor.name " +
+                      "ORDER BY COUNT(a) DESC";
+        return em.createQuery(jpql, Object[].class).getResultList();
+    }
+    
+    public List<Object[]> getAppointmentCountPerSpecialty() {
+        String jpql = "SELECT a.specialty.name, COUNT(a) " +
+                      "FROM Appointment a " +
+                      "GROUP BY a.specialty.name " +
+                      "ORDER BY COUNT(a) DESC";
+        return em.createQuery(jpql, Object[].class).getResultList();
+    }
+    
+    public List<Object[]> getDoctorOccupationReport() {
+        // Lista de todos los doctores
+        List<User> doctors = em.createQuery("SELECT u FROM User u WHERE u.role = 'doctor'", User.class).getResultList();
+        List<Object[]> report = new ArrayList<>();
+
+        for (User doctor : doctors) {
+            // Obtener los horarios del doctor
+            List<DoctorSchedule> schedules = em.createQuery(
+                "SELECT ds FROM DoctorSchedule ds WHERE ds.doctor.id = :doctorId", DoctorSchedule.class)
+                .setParameter("doctorId", doctor.getId())
+                .getResultList();
+
+            // Total de minutos disponibles por semana
+            int totalMinutes = schedules.size() * 60; // Asumimos que cada horario es de 1 hora
+
+            // Obtener el número de citas del doctor
+            Long citasCount = em.createQuery(
+                "SELECT COUNT(a) FROM Appointment a WHERE a.doctor.id = :doctorId", Long.class)
+                .setParameter("doctorId", doctor.getId())
+                .getSingleResult();
+
+            int minutesPerAppointment = 30; // Asumido
+            int totalOccupied = citasCount.intValue() * minutesPerAppointment;
+
+            report.add(new Object[]{
+                doctor.getName(),
+                totalMinutes,
+                totalOccupied
+            });
+        }
+
+        return report;
+    }
+
+    
 }

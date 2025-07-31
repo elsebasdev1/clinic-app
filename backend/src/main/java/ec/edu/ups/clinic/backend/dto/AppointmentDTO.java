@@ -4,9 +4,20 @@ public class AppointmentDTO {
 
 	private Long patientId;
     private Long doctorId;
+    private Long specialtyId;
     private String dateTime;
 
-    public Long getPatientId() {
+    
+    
+    public Long getSpecialtyId() {
+		return specialtyId;
+	}
+
+	public void setSpecialtyId(Long specialtyId) {
+		this.specialtyId = specialtyId;
+	}
+
+	public Long getPatientId() {
         return patientId;
     }
 
