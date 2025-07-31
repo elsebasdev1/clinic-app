@@ -173,14 +173,15 @@ export default function AdminDashboard() {
   }
 };
 
-
   const filteredAppointments = appointments.filter(appt => {
     if (statusFilter !== 'all' && appt.status !== statusFilter) return false;
-    const doctorName = doctorsMap[appt.doctorId] || 'N/A';
-    const userData = usersMap[appt.patientId];
-    const patientName = userData?.name || appt.patientId;
+
+    const doctorName = appt.doctor?.name || '';
+    const patientName = appt.patient?.name || '';
     const term = searchTerm.trim().toLowerCase();
+
     if (!term) return true;
+
     return doctorName.toLowerCase().includes(term) || patientName.toLowerCase().includes(term);
   });
 
@@ -193,20 +194,31 @@ export default function AdminDashboard() {
           <button onClick={() => nav('/admin/doctors')} className="px-4 py-2 bg-green-600 text-white rounded-md">Médicos</button>
           <button onClick={() => nav('/admin/users')} className="px-4 py-2 bg-blue-600 text-white rounded-md">Usuarios</button>
           <button onClick={logout} className="px-4 py-2 bg-red-500 text-white rounded-md">Salir</button>
-          <button onClick={downloadDoctorReportPdf} className="px-4 py-2 bg-orange-600 text-white rounded-md">Reporte Doctores</button>
-          <button onClick={downloadSpecialtyReportPdf} className="px-4 py-2 bg-pink-600 text-white rounded-md">Reporte Especialidad</button>
-          <button onClick={downloadOccupationReportPdf} className="px-4 py-2 bg-purple-600 text-white rounded-md">Reporte Ocupación</button>
-
-
         </div>
       </header>
 
+      <div className="mt-6 mb-4">
+        <h3 className="text-lg font-semibold flex items-center gap-2 mb-2">
+          📄Reportes
+        </h3>
+        <div className="flex flex-wrap gap-3">
+          <button onClick={downloadDoctorReportPdf} className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded hover:bg-gray-100 text-sm">
+            Reporte de Doctores
+          </button>
+          <button onClick={downloadSpecialtyReportPdf} className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded hover:bg-gray-100 text-sm">
+            Reporte por Especialidad
+          </button>
+          <button onClick={downloadOccupationReportPdf} className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded hover:bg-gray-100 text-sm">
+            Reporte de Ocupación
+          </button>
+        </div>
+      </div>
       <div className="max-w-2xl w-full mx-auto flex flex-wrap gap-4 items-center mb-6">
         <div>
           <label className="mr-2 font-medium">Estado:</label>
           <select className="border p-1 rounded" value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
             <option value="all">Todas</option>
-            <option value="Pendiente">Pendientes</option>
+            <option value="PENDIENTE">Pendientes</option>
             <option value="Confirmada">Confirmadas</option>
           </select>
         </div>
@@ -232,7 +244,7 @@ export default function AdminDashboard() {
 
             return (
               <li key={appt.id} className="relative p-4 bg-white rounded-lg shadow flex flex-col sm:flex-row justify-between items-start sm:items-stretch max-w-4xl mx-auto">
-                <span className={`absolute -top-3 left-4 px-3 py-1 rounded-full text-xs font-semibold shadow ${appt.status === 'CONFIRMADA' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                <span className={`absolute -top-3 left-4 px-3 py-1 rounded-full text-xs font-semibold shadow ${appt.status === 'Confirmada' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
                   {appt.status}
                 </span>
                 <div className="flex flex-col sm:flex-row sm:justify-between w-full gap-4">

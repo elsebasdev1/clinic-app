@@ -145,6 +145,7 @@ export default function ScheduleAppointment() {
       });
 
       notifySuccess('Cita agendada exitosamente!');
+      nav('/');
     } catch (err) {
       notifyError('Error al agendar la cita');
     }

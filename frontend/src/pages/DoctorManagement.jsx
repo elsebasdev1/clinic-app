@@ -110,6 +110,27 @@ export default function DoctorManagement() {
     fetchSpecialties();
   }, [firebaseUser]);
 
+    const handleDeleteDoctor = async (doctorId) => {
+    if (!window.confirm("¿Estás seguro de eliminar este doctor?")) return;
+
+    try {
+      const token = await firebaseUser.getIdToken();
+      await axios.delete(`/doctors/${doctorId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      notifySuccess("Doctor eliminado");
+      fetchDoctors();
+    } catch (err) {
+      console.error("❌ Error al eliminar doctor", err);
+      if (err.response?.status === 400) {
+        notifyError("El doctor tiene citas agendadas y no puede ser eliminado");
+      } else {
+        notifyError("No se pudo eliminar el doctor");
+      }
+    }
+  };
+
   return (
     <div className="p-6 max-w-5xl mx-auto">
       <h2 className="text-2xl font-semibold mb-4">Gestión de Doctores</h2>
@@ -220,6 +241,12 @@ export default function DoctorManagement() {
             ).join(', ')}
             </p>
             <p>Horario: {doc.slots?.join(' - ')}</p>
+            <button
+            onClick={() => handleDeleteDoctor(doc.id)}
+            className="mt-2 bg-red-500 text-white px-3 py-1 rounded"
+          >
+            Eliminar
+          </button>
           </li>
         ))}
       </ul>

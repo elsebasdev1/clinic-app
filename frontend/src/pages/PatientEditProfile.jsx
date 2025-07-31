@@ -63,6 +63,7 @@ export default function EditProfile() {
       });
 
       notifySuccess('Perfil actualizado correctamente!');
+      navigate('/');
     } catch (err) {
       console.error(err);
       notifyError('Ocurrió un error al actualizar el perfil.');

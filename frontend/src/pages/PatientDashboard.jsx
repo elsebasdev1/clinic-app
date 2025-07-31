@@ -28,6 +28,7 @@ export default function PatientDashboard() {
   });
   const [slotsDisponibles, setSlotsDisponibles] = useState([]);
   const [profile, setProfile] = useState({ name: '' });
+  const WEEK_DAYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 
   const fetchAppointments = async () => {
     try {
@@ -43,8 +44,6 @@ export default function PatientDashboard() {
       notifyError("No se pudieron cargar las citas");
     }
   };
-
-
 
   const downloadPDF = async (appointmentId) => {
   try {
@@ -70,9 +69,6 @@ export default function PatientDashboard() {
     alert('No se pudo descargar el PDF. ¿Estás autenticado?');
   }
 };
-
-
-
 
   const fetchDoctors = async () => {
     try {
@@ -148,74 +144,122 @@ export default function PatientDashboard() {
         setSlotsDisponibles([]);
         return;
       }
+
       try {
-        const selected = doctorsList.find(d => d.id === editForm.doctorId);
+        const selected = doctorsList.find(
+          d => d.id.toString() === editForm.doctorId.toString()
+        );
+
+        if (!selected) {
+          notifyError("Doctor no encontrado");
+          return;
+        }
+
+        if (!selected.slots || selected.slots.length < 2) {
+          notifyError("El doctor no tiene horarios válidos");
+          return;
+        }
+
         const dayCode = WEEK[getDay(parseISO(editForm.date))];
+
         if (!selected.days.includes(dayCode)) {
           setSlotsDisponibles([]);
           return;
         }
 
+        // Obtener citas del backend
         const token = await firebaseUser.getIdToken();
         const res = await axios.get('/appointments', {
           headers: { Authorization: `Bearer ${token}` }
         });
 
         const clashes = res.data.filter(a =>
-          a.doctorId === editForm.doctorId &&
+          a.doctorId &&
+          selected.id &&
+          a.doctorId.toString() === selected.id.toString() &&
           a.date === editForm.date &&
           a.id !== editingId
         );
 
         const taken = clashes.map(a => a.time);
-        const libres = selected.slots.filter(s => !taken.includes(s));
-        setSlotsDisponibles(libres);
+
+        // Generar slots disponibles
+        const generateSlots = (start, end) => {
+          const result = [];
+          const [sh, sm] = start.split(':').map(Number);
+          const [eh, em] = end.split(':').map(Number);
+
+          let current = new Date();
+          current.setHours(sh, sm, 0, 0);
+
+          const endTime = new Date();
+          endTime.setHours(eh, em, 0, 0);
+
+          while (current <= endTime) {
+            const h = String(current.getHours()).padStart(2, '0');
+            const m = String(current.getMinutes()).padStart(2, '0');
+            const time = `${h}:${m}`;
+            if (!taken.includes(time)) result.push(time);
+            current.setMinutes(current.getMinutes() + 30);
+          }
+
+          return result;
+        };
+
+        const availableSlots = generateSlots(selected.slots[0], selected.slots[1]);
+        setSlotsDisponibles(availableSlots);
       } catch (err) {
+        console.error("Error al calcular horarios:", err);
         notifyError("Error al calcular los horarios");
         setSlotsDisponibles([]);
       }
     }
+
     calcSlots();
   }, [editForm.doctorId, editForm.date, editingId]);
+
 
   const saveEdit = async (id) => {
     if (!editForm.doctorId || !editForm.date || !editForm.time) {
       return notifyError("Faltan campos");
     }
+
     try {
       const token = await firebaseUser.getIdToken();
+
+      const dateTime = `${editForm.date}T${editForm.time}`;
+
       await axios.put(`/appointments/${id}`, {
-        doctorId: editForm.doctorId,
-        date: editForm.date,
-        time: editForm.time
+        doctor: { id: parseInt(editForm.doctorId) },
+        dateTime,
+        status: "PENDIENTE"
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
+
       notifySuccess("Cita actualizada");
       cancelEditing();
       fetchAppointments();
     } catch (err) {
+      console.error("Error en PUT:", err.response?.data || err.message);
       notifyError("Error al actualizar la cita");
     }
   };
 
-  const formatDate = (iso) => {
-    try {
-      return format(parseISO(iso), "EEEE, dd 'de' MMMM 'del' yyyy", { locale: es });
-    } catch {
-      return iso;
-    }
-  };
-
-
 
   const visibleAppointments = appointments.filter(appt => {
     if (statusFilter !== 'all' && appt.status !== statusFilter) return false;
-    if (searchTerm.trim()) {
-      const docName = (doctorsMap[appt.doctorId] || '').toLowerCase();
-      return docName.includes(searchTerm.toLowerCase());
-    }
-    return true;
+
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) return true;
+
+    const doctorName = appt.doctor?.name?.toLowerCase() || '';
+    const specialtyName = appt.doctor?.specialty?.name?.toLowerCase() || '';
+
+    return (
+      doctorName.includes(term) ||
+      specialtyName.includes(term)
+    );
   });
 
   return (
@@ -228,18 +272,17 @@ export default function PatientDashboard() {
           <button onClick={logout} className="px-4 py-2 bg-red-500 text-white rounded-md">Salir</button>
         </div>
       </header>
-
       <div className="max-w-2xl w-full mx-auto flex flex-wrap gap-4 items-center mb-6">
         <div>
           <label className="mr-2 font-medium">Estado:</label>
           <select className="border p-2 rounded" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
             <option value="all">Todas</option>
-            <option value="Pendiente">Pendientes</option>
+            <option value="PENDIENTE">Pendientes</option>
             <option value="Confirmada">Confirmadas</option>
           </select>
         </div>
         <div className="flex-1">
-          <input type="text" placeholder="Buscar por médico..." className="w-full border p-2 rounded"
+          <input type="text" placeholder="Buscar por médico o especialidad..." className="w-full border p-2 rounded"
             value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
         </div>
       </div>
@@ -254,7 +297,6 @@ export default function PatientDashboard() {
             const doctorName = appt.doctor?.name || doctorsMap[appt.doctorId] || 'Desconocido';
             const specialtyName = appt.specialty?.name || appt.doctor?.specialty?.name || 'N/A';
             const isEditing = editingId === appt.id;
-            const isPending = appt.status?.toUpperCase() === 'PENDIENTE';
 
           const dateObj = Array.isArray(appt.dateTime) && appt.dateTime.length >= 5
             ? new Date(appt.dateTime[0], appt.dateTime[1] - 1, appt.dateTime[2], appt.dateTime[3], appt.dateTime[4])
@@ -262,7 +304,7 @@ export default function PatientDashboard() {
             return (
               <li key={appt.id} className="relative bg-white rounded-lg shadow">
                 <span className={`absolute -top-3 left-4 px-3 py-1 rounded-full text-xs font-semibold shadow
-                  ${appt.status === 'CONFIRMADA' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                  ${appt.status === 'Confirmada' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
                   {appt.status}
                 </span>
                 <div className="p-4 flex flex-col sm:flex-row justify-between items-start text-base space-y-2 sm:space-y-0 sm:space-x-4">
@@ -273,33 +315,48 @@ export default function PatientDashboard() {
                   <p><strong>Hora:</strong> {dateObj ? `${String(dateObj.getHours()).padStart(2, '0')}:${String(dateObj.getMinutes()).padStart(2, '0')}` : 'N/A'}</p>
                   </div>
                   <div className="flex flex-col gap-2 items-end self-center sm:w-[200px] ml-auto">
-                    {!isEditing && (
-                      <div className="flex gap-2 flex-wrap">
-                        <button onClick={() => startEditing(appt)} className="px-3 py-1 bg-blue-500 text-white rounded">Editar</button>
-                        <button onClick={() => deleteAppointment(appt.id)} className="px-3 py-1 bg-red-500 text-white rounded">Cancelar Cita</button>
-                        <button
-                          onClick={() => downloadPDF(appt.id)}
-                          className="px-3 py-1 bg-indigo-600 text-white rounded"
-                        >
-                          Descargar PDF
-                        </button>
-                      </div>
-                    )}
+                  {!isEditing && (
+                    <div className="flex gap-2 flex-wrap">
+                      {appt.status !== 'Confirmada' && (
+                        <>
+                          <button onClick={() => startEditing(appt)} className="px-3 py-1 bg-blue-500 text-white rounded">Editar</button>
+                          <button onClick={() => deleteAppointment(appt.id)} className="px-3 py-1 bg-red-500 text-white rounded">Cancelar Cita</button>
+                        </>
+                      )}
+                      <button
+                        onClick={() => downloadPDF(appt.id)}
+                        className="px-3 py-1 bg-indigo-600 text-white rounded"
+                      >
+                        Descargar PDF
+                      </button>
+                    </div>
+                  )}
                   </div>
                 </div>
                 {isEditing && (
                   <div className="border-t px-4 py-4 bg-gray-50">
                     <h3 className="font-medium mb-2">Editar Cita</h3>
                     <div className="space-y-3">
-                      <div>
-                        <label className="block mb-1 font-medium">Médico:</label>
-                        <select className="border p-2 w-full rounded" value={editForm.doctorId}
-                          onChange={e => setEditForm({ ...editForm, doctorId: e.target.value, date: '', time: '' })}>
-                          <option value="">Selecciona médico</option>
-                          {doctorsList.filter(d => d.specialty === appt.specialty)
-                            .map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-                        </select>
-                      </div>
+                    <div>
+                      <label className="block mb-1 font-medium">Médico:</label>
+                      <select
+                        className="border p-2 w-full rounded"
+                        value={editForm.doctorId}
+                        onChange={e => setEditForm({
+                          ...editForm,
+                          doctorId: e.target.value,
+                          date: '',
+                          time: ''
+                        })}
+                      >
+                        <option value="">Selecciona médico</option>
+                        {doctorsList
+                          .filter(d => d.specialty === appt.specialty?.name)
+                          .map(d => (
+                            <option key={d.id} value={d.id}>{d.name}</option>
+                          ))}
+                      </select>
+                    </div>
                       <div>
                         <label className="block mb-1 font-medium">Fecha:</label>
                         <DatePicker
@@ -309,15 +366,17 @@ export default function PatientDashboard() {
                             setEditForm({ ...editForm, date: formatted, time: '' });
                           }}
                           filterDate={date => {
-                            const doc = doctorsList.find(d => d.id === editForm.doctorId);
-                            if (!doc) return false;
-                            const jsDay = getDay(date);
-                            const code = WEEK[jsDay];
-                            return doc.days.includes(code);
+                            const selectedDoc = doctorsList.find(d => d.id.toString() === editForm.doctorId);
+                            if (!selectedDoc) return false;
+
+                            const jsDay = getDay(date); 
+                            const weekCode = WEEK_DAYS[jsDay]; 
+                            return selectedDoc.days.includes(weekCode);
                           }}
                           placeholderText="Fecha"
-                          className="border p-2 w-full rounded"
+                          className="border p-2 w-full"
                         />
+
                       </div>
                       <div>
                         <label className="block mb-1 font-medium">Hora:</label>
