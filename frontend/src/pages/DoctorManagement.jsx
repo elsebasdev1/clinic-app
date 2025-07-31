@@ -110,8 +110,24 @@ export default function DoctorManagement() {
     fetchSpecialties();
   }, [firebaseUser]);
 
-    const handleDeleteDoctor = async (doctorId) => {
-    if (!window.confirm("¿Estás seguro de eliminar este doctor?")) return;
+  const doctorHasAppointments = async (doctorId) => {
+    const token = await firebaseUser.getIdToken();
+    const res = await axios.get('/appointments', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    const citas = res.data.filter(appt => appt.doctorId === doctorId);
+    return citas.length > 0;
+  };
+  
+  const handleDeleteDoctor = async (doctorId) => {
+    const hasCitas = await doctorHasAppointments(doctorId);
+    if (hasCitas) {
+      notifyError("Este doctor tiene citas agendadas y no puede ser eliminado.");
+      return;
+    }
+
+    if (!window.confirm("¿Eliminar este doctor?")) return;
 
     try {
       const token = await firebaseUser.getIdToken();
@@ -122,14 +138,10 @@ export default function DoctorManagement() {
       notifySuccess("Doctor eliminado");
       fetchDoctors();
     } catch (err) {
-      console.error("❌ Error al eliminar doctor", err);
-      if (err.response?.status === 400) {
-        notifyError("El doctor tiene citas agendadas y no puede ser eliminado");
-      } else {
-        notifyError("No se pudo eliminar el doctor");
-      }
+      notifyError("Error al eliminar doctor");
     }
   };
+
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
