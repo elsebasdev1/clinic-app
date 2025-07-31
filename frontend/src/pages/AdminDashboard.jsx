@@ -227,9 +227,8 @@ export default function AdminDashboard() {
           const patientPhone = appt.patient?.phone || 'N/A';
 
           const dateObj = Array.isArray(appt.dateTime) && appt.dateTime.length >= 5
-            ? new Date(...appt.dateTime)
+            ? new Date(appt.dateTime[0], appt.dateTime[1] - 1, appt.dateTime[2], appt.dateTime[3], appt.dateTime[4])
             : null;
-
 
             return (
               <li key={appt.id} className="relative p-4 bg-white rounded-lg shadow flex flex-col sm:flex-row justify-between items-start sm:items-stretch max-w-4xl mx-auto">

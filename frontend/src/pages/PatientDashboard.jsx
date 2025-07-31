@@ -256,9 +256,9 @@ export default function PatientDashboard() {
             const isEditing = editingId === appt.id;
             const isPending = appt.status?.toUpperCase() === 'PENDIENTE';
 
-            const dateObj = Array.isArray(appt.dateTime) && appt.dateTime.length >= 5
-              ? new Date(...appt.dateTime)
-              : null;
+          const dateObj = Array.isArray(appt.dateTime) && appt.dateTime.length >= 5
+            ? new Date(appt.dateTime[0], appt.dateTime[1] - 1, appt.dateTime[2], appt.dateTime[3], appt.dateTime[4])
+            : null;
             return (
               <li key={appt.id} className="relative bg-white rounded-lg shadow">
                 <span className={`absolute -top-3 left-4 px-3 py-1 rounded-full text-xs font-semibold shadow
