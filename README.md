@@ -1,9 +1,3 @@
-# 🏥 Sistema de Citas Médicas - Versión Extendida
-
-Este es un sistema web completo de **gestión de citas médicas** que ha sido ampliado con una arquitectura robusta de backend, integración con base de datos y funcionalidades avanzadas. Está diseñado para ofrecer una experiencia fluida tanto a pacientes como a administradores, facilitando la gestión de citas, historial médico y comunicaciones automatizadas.
-
-## 📸 Capturas
-
 
 
 ## 🚀 Tecnologías Utilizadas
