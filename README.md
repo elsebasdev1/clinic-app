@@ -75,8 +75,8 @@ src/
 1. Clona el repositorio:
 
    ```bash
-   git clone https://github.com/elsebasdev1/integradorkr.git
-   cd integradorkr
+   git clone https://github.com/elsebasdev1/clinic-app.git
+   cd clinic-app
    ```
 
 2. Configura el backend:
